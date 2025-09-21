@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, Transaction
 from products.serializers import ProductSerializer
-
+from products.models import Product
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -14,19 +14,21 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True)
 
+    items = OrderItemSerializer(many=True)
     class Meta:
         model = Order
         fields = [
-            'id', 'customer', 'company', 'governorate', 'address',
-            'items_total', 'shipping_cost', 'total_amount',
-            'latitude', 'longitude', 'status', 'created_at', 'items'
+            "id", "company", "governorate", "address",
+            "shipping_cost", "items", "items_total",
+            "total_amount", "status", "created_at"
         ]
         read_only_fields = [
-            'id', 'created_at', 'customer',
-            'items_total', 'shipping_cost', 'total_amount'
+            "id", "created_at", "customer",
+            "items_total", "total_amount"
         ]
+
+
 
     def validate_items(self, value):
         if not value or len(value) == 0:
@@ -48,25 +50,23 @@ class OrderSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        items_data = validated_data.pop("items")
+        items_data = validated_data.pop("items", [])
+        validated_data.pop("customer", None)
         user = self.context["request"].user
-
         order = Order.objects.create(customer=user, **validated_data)
-
         for item_data in items_data:
             OrderItem.objects.create(order=order, **item_data)
-
-        # حساب المبالغ تلقائي
-        order.update_totals()
-
+        order.update_totals()  # تحديث التوتال مع حساب الشحن
         return order
-
     def update(self, instance, validated_data):
         instance.governorate = validated_data.get('governorate', instance.governorate)
         instance.status = validated_data.get('status', instance.status)
         instance.address = validated_data.get('address', instance.address)
+        # لا تحدث shipping_cost من هنا لأنه محسوب تلقائيًا
+        instance.save()
         instance.update_totals()
         return instance
+
 
 
 class TransactionSerializer(serializers.ModelSerializer):

@@ -24,7 +24,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="products")
-    Vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="products", null=True, blank=True)
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="products", null=True, blank=True)
     name = models.CharField(max_length=255)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     slug = models.SlugField(unique=True, max_length=255)
@@ -32,25 +32,29 @@ class Product(models.Model):
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     stock = models.PositiveIntegerField(default=0)
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    def save(self, *args, **kwargs):
-        limit = self.company.plan_limit
 
+    def clean(self):
+        """تحقق من الحد الشهري للمنتجات حسب خطة الشركة"""
+        limit = getattr(self.company, "plan_limit", None)
         if limit is not None:  # لو الخطة مش unlimited
             now = timezone.now()
             monthly_count = Product.objects.filter(
                 company=self.company,
                 created_at__year=now.year,
                 created_at__month=now.month,
-            ).count()
+            ).exclude(pk=self.pk).count()  # استبعاد المنتج الحالي
 
-            if monthly_count >= limit:
+            if self.pk is None and monthly_count >= limit:
                 raise ValidationError(
                     _(f"You have reached the monthly limit ({limit}) for {self.company.subscription_plan} plan.")
                 )
 
+    def save(self, *args, **kwargs):
+        self.full_clean()  # يتأكد من الـ validation
         super().save(*args, **kwargs)
 
     def discounted_price(self, total_price, discount_percentage):
@@ -62,7 +66,6 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
-
 
 
 class Review(models.Model):

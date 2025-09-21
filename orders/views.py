@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from .models import Order, OrderItem, Transaction
-from .seriailizers import OrderSerializer, OrderItemSerializer, TransactionSerializer
+from .serializers import OrderSerializer, OrderItemSerializer, TransactionSerializer
 from accounts.models import Notification
 from products.models import Product
 import uuid
@@ -77,45 +77,15 @@ class OrderViewSet(viewsets.ModelViewSet):
             user = self.request.user
             company = getattr(user, "company", None)
             order = serializer.save(customer=user, company=company)
-
-            # حساب تكلفة الشحن
-            try:
-                order.shipping_cost = calculate_shipping(order)
-            except Exception as e:
-                raise serializers.ValidationError({"shipping": _(f"Error in shipping calculation: {str(e)}")})
-
             items_data = self.request.data.get("items", [])
             if not items_data:
                 raise serializers.ValidationError({"items": _("You must provide at least one product.")})
-
-            items_total = 0
             for item in items_data:
-                try:
-                    product = Product.objects.get(id=item["product"])
-                except Product.DoesNotExist:
-                    raise serializers.ValidationError({"product": _(f"Product with id {item['product']} does not exist.")})
-
+                product = Product.objects.get(id=item["product"])
                 quantity = int(item.get("quantity", 1))
+                OrderItem.objects.create(order=order, product=product, quantity=quantity)
+            order.update_totals()  # حساب التوتال والشحن والإحداثيات
 
-                # السعر النهائي بعد أي خصم
-                final_price = product.price
-                if product.discount:
-                    final_price -= (final_price * product.discount / 100)
-
-                # تخزين السعر النهائي في OrderItem
-                OrderItem.objects.create(
-                    order=order,
-                    product=product,
-                    quantity=quantity,
-                    price=final_price
-                )
-
-                items_total += final_price * quantity
-
-            # تحديث الإجماليات
-            order.items_total = items_total
-            order.total_amount = items_total + order.shipping_cost
-            order.save()
 
 
     def destroy(self, request, *args, **kwargs):
@@ -172,9 +142,7 @@ class OrderItemViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError("لا يمكنك إضافة منتجات لأوردر ليس ملكك.")
 
         serializer.save()
-        order.update_totals()
-
-
+        
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()

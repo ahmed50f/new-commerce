@@ -13,11 +13,11 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'slug', 'company', 'Vendor', 'category', 
+        'name', 'slug', 'company', 'vendor', 'category', 
         'price', 'stock', 'is_active', 'created_at', 'updated_at'
     )
-    list_filter = ('is_active', 'company', 'Vendor')
-    search_fields = ('name', 'description', 'company__name', 'Vendor__name')
+    list_filter = ('is_active', 'company', 'vendor')
+    search_fields = ('name', 'description', 'company__name', 'vendor__name')
     prepopulated_fields = {'slug': ('name',)}
     ordering = ('name',)
     readonly_fields = ('created_at', 'updated_at')

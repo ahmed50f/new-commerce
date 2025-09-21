@@ -40,19 +40,14 @@ GOVERNORATE_COORDINATES = {
 
 
 def calculate_shipping(order):
-    """
-    تحسب سعر الشحن وتحدث إحداثيات الطلب حسب المحافظة
-    """
     if not order.governorate:
         order.latitude = None
         order.longitude = None
-        return 50
-
+        return 50  # سعر افتراضي
     coords = GOVERNORATE_COORDINATES.get(order.governorate)
     if coords:
         order.latitude, order.longitude = coords
     else:
         order.latitude = None
         order.longitude = None
-
     return GOVERNORATE_SHIPPING_COST.get(order.governorate, 50)

@@ -1,9 +1,13 @@
 from django.db import models
-from django.conf import settings
-from accounts.models import Company                                                                 
+from django.conf import settings                                                               
 import uuid
 from .utils import calculate_shipping
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.core.exceptions import ValidationError   
 # Create your models here.
+
+
 class Order(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -67,25 +71,51 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def update_totals(self):
-        items_total = sum(item.product.price * item.quantity for item in self.items.all())
+    def update_totals(self, include_shipping=True):
+        items_total = sum(item.get_total() for item in self.items.all())
         self.items_total = items_total
+        if include_shipping:
+            self.shipping_cost = calculate_shipping(self)
         self.total_amount = items_total + self.shipping_cost
         self.save()
 
     def __str__(self):
-        return f"Order #{self.id} - {self.customer}"
-
-    
+        if self.customer:
+            customer_info = f"{self.customer.phone} - {self.customer.email}"
+        else:
+            customer_info = "No Customer"
+        return f"Order #{self.id} - {customer_info}"
 
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
     product = models.ForeignKey("products.Product", on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.PositiveIntegerField()
+
+    def clean(self):
+        # التحقق من الكمية قبل الحفظ
+        if self.product and self.product.stock < self.quantity:
+            raise ValidationError("الكمية المطلوبة غير متوفرة في المخزون")
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None  # لو أول مرة بيتسجل
+        super().save(*args, **kwargs)
+        if is_new:
+            self.product.stock -= self.quantity
+            self.product.save()
+
+    def get_total(self):
+        return self.product.price * self.quantity
 
     def __str__(self):
-        return f"{self.product.name} x {self.quantity}"
+        return f"{self.quantity} x {self.product}"
+
+
+# Signal لتحديث التوتال بعد إضافة/تعديل OrderItem
+@receiver(post_save, sender=OrderItem)
+def update_order_totals(sender, instance, **kwargs):
+    instance.order.update_totals()
+
 
 class Transaction(models.Model):
     PAYMENT_METHODS = [
@@ -116,8 +146,10 @@ class Transaction(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        order_id = self.order.id if self.order else "N/A"
-        return f"{self.user.username} - Order {order_id} - {self.amount} ({self.status})"
+        order_customer = self.order.customer if self.order and self.order.customer else None
+        customer_info = order_customer.phone if order_customer else "No Customer"
+        return f"{customer_info} - Order {self.order.id} - {self.amount} ({self.status})"
+
     
 
     reference_id = models.CharField(max_length=100, blank=True, null=True, unique=True)
@@ -130,5 +162,3 @@ class Transaction(models.Model):
         if not self.reference_id:
             self.reference_id = str(uuid.uuid4()).replace("-", "").upper()[:12]  # مثال: 12 حرف فريد
         super().save(*args, **kwargs)
-
-    
