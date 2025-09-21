@@ -6,6 +6,8 @@ from accounts.models import Company
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from decimal import Decimal
+
 
 # Create your models here.
 class Category(models.Model):
@@ -24,7 +26,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="products")
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="products", null=True, blank=True)
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="products")
     name = models.CharField(max_length=255)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     slug = models.SlugField(unique=True, max_length=255)
@@ -57,13 +59,12 @@ class Product(models.Model):
         self.full_clean()  # يتأكد من الـ validation
         super().save(*args, **kwargs)
 
+   
     def discounted_price(self):
         if self.price and self.discount:
             discount_amount = (self.price * self.discount) / 100
             return self.price - discount_amount
         return self.price
-
-
     def __str__(self):
         return self.name
 

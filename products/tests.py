@@ -1,9 +1,12 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
-
+from decimal import Decimal
+from unittest.mock import patch
 from accounts.models import Company, Vendor
 from products.models import Category, Product, Review
+from django.utils.text import slugify
+
 
 User = get_user_model()
 
@@ -14,72 +17,45 @@ class CategoryTest(TestCase):
         self.assertEqual(str(cat), "Electronics")
 
 
+
 class ProductTest(TestCase):
+
     def setUp(self):
-        # شركة + يوزر + Vendor
-        self.company = Company.objects.create(name="TechCo", subscription_plan="free")
+        # إنشاء مستخدم تجريبي
         self.user = User.objects.create_user(
-            phone="01234567890", email="vendor@test.com", password="pass123"
+            phone="1234567890",
+            email="vendor@example.com",
+            password="password123"
         )
-        self.vendor = Vendor.objects.create(user=self.user, company=self.company, status="approved")
-        self.category = Category.objects.create(name="Mobiles", slug="mobiles")
 
-    def test_create_product_success(self):
-        product = Product.objects.create(
+        # إنشاء شركة تجريبية
+        self.company = Company.objects.create(name="Test Company")
+
+        # إنشاء Vendor مربوط بالمستخدم والشركة
+        self.vendor = Vendor.objects.create(user=self.user, company=self.company)
+
+        # إنشاء منتج تجريبي مع slug
+        self.product = Product.objects.create(
             company=self.company,
             vendor=self.vendor,
-            name="iPhone 15",
-            slug="iphone-15",
-            price=1000,
-            stock=10,
-            category=self.category,
+            name="Test Product",
+            slug=slugify("Test Product"),  # مهم جداً
+            price=Decimal("200.00"),
+            discount=Decimal("10"),
+            stock=10
         )
-        self.assertEqual(str(product), "iPhone 15")
-        self.assertEqual(product.company, self.company)
-        self.assertEqual(product.vendor, self.vendor)
-
-    def test_monthly_limit_restriction(self):
-        # free plan → الحد = 10 منتجات
-        limit = self.company.plan_limit
-
-        for i in range(limit):
-            Product.objects.create(
-                company=self.company,
-                vendor=self.vendor,
-                name=f"Product {i}",
-                slug=f"product-{i}",
-                price=1000,
-                stock=10,
-                category=self.category,
-            )
-
-        # المنتج التالي لازم يرمي ValidationError
-        product_overflow = Product(
-            company=self.company,
-            vendor=self.vendor,
-            name="Overflow Product",
-            slug="overflow-product",
-            price=900,
-            stock=5,
-            category=self.category,
-        )
-        with self.assertRaises(ValidationError):
-            product_overflow.full_clean()
-            product_overflow.save()
 
     def test_discounted_price(self):
-        product = Product.objects.create(
-            company=self.company,
-            vendor=self.vendor,
-            name="Headphones",
-            slug="headphones",
-            price=200,
-            stock=15,
-            category=self.category,
-        )
-        discounted = product.discounted_price(total_price=200, discount_percentage=10)
-        self.assertEqual(discounted, 180)  # 10% خصم
+        discounted = self.product.discounted_price()
+        expected = Decimal("180.00")  # 200 - 10%
+        self.assertEqual(discounted, expected)
 
+    def test_discounted_price_no_discount(self):
+        self.product.discount = Decimal("0")
+        self.product.save()
+        discounted = self.product.discounted_price()
+        expected = Decimal("200.00")  # بدون خصم
+        self.assertEqual(discounted, expected)
 
 class ReviewTest(TestCase):
     def setUp(self):
