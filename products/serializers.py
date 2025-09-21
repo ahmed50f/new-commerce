@@ -19,9 +19,15 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug', 'description', 'price', 'stock', 
             'is_active', 'category', 'category_id', 'image', 
-            'created_at', 'updated_at'
+            'created_at', 'updated_at', 'discount', 'discounted_price'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_discounted_price(self, obj):
+        return obj.discounted_price()
+
+    
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)

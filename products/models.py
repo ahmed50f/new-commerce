@@ -57,12 +57,12 @@ class Product(models.Model):
         self.full_clean()  # يتأكد من الـ validation
         super().save(*args, **kwargs)
 
-    def discounted_price(self, total_price, discount_percentage):
-        """ترجع السعر بعد الخصم"""
-        if total_price and discount_percentage:
-            discount_amount = (total_price * discount_percentage) / 100
-            return total_price - discount_amount
-        return total_price
+    def discounted_price(self):
+        if self.price and self.discount:
+            discount_amount = (self.price * self.discount) / 100
+            return self.price - discount_amount
+        return self.price
+
 
     def __str__(self):
         return self.name

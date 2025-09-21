@@ -61,23 +61,41 @@ class Order(models.Model):
         null=True,
         blank=True
     )
-    governorate = models.CharField(max_length=50, choices=GOVERNORATE_CHOICES, null=True, blank=True)
+    governorate = models.CharField(max_length=50, choices=GOVERNORATE_CHOICES, default="Cairo")
     address = models.TextField(blank=True, null=True)
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     items_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)
+    total_after_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def update_totals(self, include_shipping=True):
-        items_total = sum(item.get_total() for item in self.items.all())
+        # اجمع كل الأسعار قبل الخصم
+        items_total = sum(item.price for item in self.items.all())
+
+        # اجمع كل الخصومات
+        total_discount = sum(item.discount_amount for item in self.items.all())
+
+        # السعر بعد الخصم
+        total_after_discount = items_total - total_discount
+
         self.items_total = items_total
+        self.total_discount = total_discount
+        self.total_after_discount = total_after_discount
+
+        # حساب الشحن لو مطلوب
         if include_shipping:
             self.shipping_cost = calculate_shipping(self)
-        self.total_amount = items_total + self.shipping_cost
+
+        # المجموع النهائي مع الشحن
+        self.total_amount = total_after_discount + self.shipping_cost
+
         self.save()
+
 
     def __str__(self):
         if self.customer:
@@ -90,8 +108,10 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
     product = models.ForeignKey("products.Product", on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
-
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)  # السعر قبل الخصم
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)
+    total_after_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)
     def clean(self):
         # التحقق من الكمية قبل الحفظ
         if self.product and self.product.stock < self.quantity:
@@ -99,10 +119,28 @@ class OrderItem(models.Model):
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None  # لو أول مرة بيتسجل
+
+        # حساب السعر قبل الخصم
+        self.price = self.product.price * self.quantity
+
+        # حساب الخصم
+        if self.product.discount > 0:
+            self.discount_amount = (self.price * self.product.discount) / 100
+        else:
+            self.discount_amount = 0
+
+        # السعر بعد الخصم
+        self.total_after_discount = self.price - self.discount_amount
+
         super().save(*args, **kwargs)
+
+        # تحديث الـ stock لو أول مرة
         if is_new:
             self.product.stock -= self.quantity
             self.product.save()
+
+        # تحديث المجموع في الـ Order
+        self.order.update_totals()
 
     def get_total(self):
         return self.product.price * self.quantity

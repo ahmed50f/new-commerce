@@ -32,21 +32,31 @@ class OrderItemInline(admin.TabularInline):
     formset = OrderItemInlineFormSet
 
 
-@admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id", "customer", "company", "status",
-        "items_total", "shipping_cost", "total_amount", "created_at"
+        "items_total", "shipping_cost", 
+        "discount_percentage", "total_amount", "created_at"
     )
     list_filter = ("status", "company", "created_at")
     search_fields = ("customer__phone", "company__name")
     inlines = [OrderItemInline]
-    readonly_fields = ("items_total", "shipping_cost", "total_amount")
+    readonly_fields = ("items_total", "shipping_cost", "discount_amount", "total_after_discount", "total_amount")
 
+    # دالة لحساب نسبة الخصم مباشرة من OrderItem
+    def discount_percentage(self, obj):
+        items_total = sum(item.price for item in obj.items.all())
+        total_discount = sum(item.discount_amount for item in obj.items.all())
+        if items_total > 0:
+            return round((total_discount / items_total) * 100, 2)
+        return 0
+    discount_percentage.short_description = "Discount (%)"
+
+    # بعد حفظ الـ items نحدث التوتال
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
-        # بعد ما يتحفظوا الـ items نعمل update totals
         form.instance.update_totals()
+admin.site.register(Order, OrderAdmin)
 
 
 
