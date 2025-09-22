@@ -16,7 +16,6 @@ from django.conf import settings
 from django.utils.crypto import get_random_string
 from django.db import transaction
 import time
-from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from .models import Vendor
 from rest_framework.decorators import action
@@ -26,7 +25,7 @@ from rest_framework import permissions
 # ✅ Register View
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])   # will change it later
 def register(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
@@ -67,7 +66,7 @@ def register(request):
 
 # ✅ Login View
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])   # will change it later
 def login(request):
     phone = request.data.get("phone")
     password = request.data.get("password")
@@ -95,7 +94,7 @@ def login(request):
 
 # ✅ Logout View
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])   # will change it later
 def logout(request):
     try:
         refresh_token = request.data.get("refresh")
@@ -257,7 +256,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 # ✅ Forgot Password
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])   # will change it later
 def forgot_password(request):
     phone = request.data.get("phone")
 
@@ -297,7 +296,7 @@ def forgot_password(request):
 # ✅ Reset Password
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])  # will change it later
 def reset_password(request):
     phone = request.data.get("phone")
     otp = request.data.get("otp")

@@ -6,7 +6,7 @@ from accounts.models import Company
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from decimal import Decimal
+
 
 
 # Create your models here.

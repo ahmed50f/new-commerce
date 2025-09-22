@@ -17,7 +17,7 @@ ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="*", cast=Csv())
 
 # Application definition
 INSTALLED_APPS = [
-    "jazzmin",
+   "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -66,10 +66,11 @@ ROOT_URLCONF = "commerce.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [],  # لو عندك مسارات للقوالب حطها هنا
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -77,6 +78,8 @@ TEMPLATES = [
         },
     },
 ]
+
+
 
 WSGI_APPLICATION = "commerce.wsgi.application"
 
@@ -130,3 +133,8 @@ WAIT_TIMES = [60, 600, 1800, 3600, 7200]  # (1m, 10m, 30m, 1h, 2h)
 CYPARTA_SERVICES_API_KEY = config("CYPARTA_SERVICES_API_KEY", default="")
 CYPARTA_SERVICES_BASE_URL = config(
     "CYPARTA_SERVICES_BASE_URL", default="https://services.cyparta.com")
+
+# time zone for Egypt
+TIME_ZONE = "Africa/Cairo"  
+USE_TZ = True
+

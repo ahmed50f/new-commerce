@@ -9,7 +9,6 @@ from products.models import Product
 import uuid
 from .utils import calculate_shipping
 from django.core.exceptions import PermissionDenied
-from rest_framework.exceptions import ValidationError
 from rest_framework.exceptions import NotFound
 from orders.models import Transaction
 

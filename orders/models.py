@@ -162,6 +162,9 @@ class Transaction(models.Model):
         ("paypal", "PayPal"),
         ("fawry", "Fawry"),
         ("wallet", "Wallet"),
+        ("cash_on_delivery", "Cash on Delivery"),
+        ("apple_pay", "Apple Pay"),
+      
     ]
 
     STATUS_CHOICES = [
