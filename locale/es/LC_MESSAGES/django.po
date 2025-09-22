@@ -1,0 +1,355 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-22 16:58+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? "
+"1 : 2;\n"
+#: accounts/admin.py:19
+msgid "Personal info"
+msgstr ""
+
+#: accounts/admin.py:20
+msgid "Roles & Permissions"
+msgstr ""
+
+#: accounts/admin.py:21
+msgid "Important dates"
+msgstr ""
+
+#: accounts/models.py:17
+msgid "The phone number must be set"
+msgstr ""
+
+#: accounts/models.py:19
+msgid "The email must be set"
+msgstr ""
+
+#: accounts/models.py:39
+msgid "Vendor"
+msgstr ""
+
+#: accounts/models.py:40
+msgid "Client"
+msgstr ""
+
+#: accounts/models.py:41
+msgid "Admin"
+msgstr ""
+
+#: accounts/models.py:74
+msgid "Free"
+msgstr ""
+
+#: accounts/models.py:75
+msgid "Basic"
+msgstr ""
+
+#: accounts/models.py:76
+msgid "Premium"
+msgstr ""
+
+#: accounts/models.py:161
+msgid "الكود لازم يكون أرقام فقط."
+msgstr ""
+
+#: accounts/models.py:163 accounts/serializers.py:173
+msgid "الكود لازم يكون مكون من 4 أرقام بالظبط."
+msgstr ""
+
+#: accounts/serializers.py:57
+msgid "You are already a vendor for this company."
+msgstr ""
+
+#: accounts/serializers.py:81
+msgid "كلمة المرور لازم تكون بين 6 و 16 حرف."
+msgstr ""
+
+#: accounts/serializers.py:85
+msgid "كلمتا المرور مش متطابقتين."
+msgstr ""
+
+#: accounts/serializers.py:89
+msgid "رقم الهاتف مستخدم بالفعل."
+msgstr ""
+
+#: accounts/serializers.py:93
+msgid "البريد الإلكتروني مستخدم بالفعل."
+msgstr ""
+
+#: accounts/serializers.py:126 accounts/serializers.py:129
+msgid "رقم الهاتف أو كلمة المرور غير صحيحة."
+msgstr ""
+
+#: accounts/serializers.py:132
+msgid "الحساب غير مفعل. يرجى التحقق من OTP."
+msgstr ""
+
+#: accounts/serializers.py:137
+msgid "يجب تقديم رقم الهاتف وكلمة المرور."
+msgstr ""
+
+#: accounts/serializers.py:154
+msgid "All fields are required."
+msgstr ""
+
+#: accounts/serializers.py:157
+msgid "Invalid OTP format."
+msgstr ""
+
+#: accounts/serializers.py:160
+msgid "Passwords do not match."
+msgstr ""
+
+#: accounts/serializers.py:171
+msgid "الكود لازم يكون 4 أرقام فقط."
+msgstr ""
+
+#: accounts/serializers.py:183
+msgid "لا يوجد كود OTP صالح."
+msgstr ""
+
+#: accounts/serializers.py:187
+msgid "الكود غير صحيح."
+msgstr ""
+
+#: accounts/serializers.py:193
+msgid "الكود منتهي الصلاحية."
+msgstr ""
+
+#: accounts/serializers.py:214
+msgid "Old password is incorrect."
+msgstr ""
+
+#: accounts/serializers.py:217
+msgid "New passwords do not match."
+msgstr ""
+
+#: accounts/serializers.py:220
+msgid "Password must be between 6 and 16 characters."
+msgstr ""
+
+#: accounts/views.py:56
+msgid "User registered successfully."
+msgstr ""
+
+#: accounts/views.py:61
+msgid "Registration failed."
+msgstr ""
+
+#: accounts/views.py:78
+msgid "Account is not active. Please verify your phone number."
+msgstr ""
+
+#: accounts/views.py:83
+msgid "Login Successfully"
+msgstr ""
+
+#: accounts/views.py:90
+msgid "Invalid credentials."
+msgstr ""
+
+#: accounts/views.py:92 accounts/views.py:269 accounts/views.py:311
+msgid "User not found."
+msgstr ""
+
+#: accounts/views.py:102
+msgid "Refresh token is required."
+msgstr ""
+
+#: accounts/views.py:106
+msgid "Logged out successfully."
+msgstr ""
+
+#: accounts/views.py:108
+msgid "Invalid token or already blacklisted."
+msgstr ""
+
+#: accounts/views.py:144
+msgid "الشركة غير موجودة."
+msgstr ""
+
+#: accounts/views.py:151
+msgid "مش مصرح لك بحذف الشركة دي."
+msgstr ""
+
+#: accounts/views.py:157
+msgid "تم حذف الشركة بنجاح."
+msgstr ""
+
+#: accounts/views.py:221
+msgid "طلب الـ Vendor غير موجود."
+msgstr ""
+
+#: accounts/views.py:228
+msgid "مش مصرح لك بحذف طلب الـ Vendor ده."
+msgstr ""
+
+#: accounts/views.py:234
+msgid "تم حذف طلب الـ Vendor بنجاح."
+msgstr ""
+
+#: accounts/views.py:264
+msgid "Phone number is required."
+msgstr ""
+
+#: accounts/views.py:280
+#, python-brace-format
+msgid "Please wait {remaining_time} seconds before requesting a new OTP."
+msgstr ""
+
+#: accounts/views.py:290
+msgid "OTP generated for password reset."
+msgstr ""
+
+#: accounts/views.py:306
+msgid "Phone number, OTP, and new password are required."
+msgstr ""
+
+#: accounts/views.py:315
+msgid "Invalid or expired OTP."
+msgstr ""
+
+#: accounts/views.py:324
+msgid "Password reset successfully."
+msgstr ""
+
+#: accounts/views.py:334
+msgid "Password changed successfully."
+msgstr ""
+
+#: commerce/settings.py:124
+msgid "English"
+msgstr ""
+
+#: commerce/settings.py:125
+msgid "Arabic"
+msgstr ""
+
+#: commerce/settings.py:126
+msgid "French"
+msgstr ""
+
+#: commerce/settings.py:127
+msgid "German"
+msgstr ""
+
+#: commerce/settings.py:128
+msgid "Spanish"
+msgstr ""
+
+#: commerce/settings.py:129
+msgid "Italian"
+msgstr ""
+
+#: orders/views.py:68
+msgid "Vendors must be linked to a company."
+msgstr ""
+
+#: orders/views.py:81
+msgid "You must provide at least one product."
+msgstr ""
+
+#: orders/views.py:95
+msgid "الطلب غير موجود."
+msgstr ""
+
+#: orders/views.py:103 orders/views.py:106
+msgid "مش مصرح لك بحذف هذا الطلب."
+msgstr ""
+
+#: orders/views.py:110
+msgid "تم حذف الطلب بنجاح."
+msgstr ""
+
+#: orders/views.py:159
+msgid "Order not found or invalid."
+msgstr ""
+
+#: orders/views.py:163
+msgid "This order does not belong to you."
+msgstr ""
+
+#: orders/views.py:180
+msgid "Payment Successful"
+msgstr ""
+
+#: orders/views.py:181
+msgid "Your payment for Order #{} was successful."
+msgstr ""
+
+#: orders/views.py:187
+msgid "Payment Failed"
+msgstr ""
+
+#: orders/views.py:188
+msgid "Your payment for Order #{} has failed. Please try again."
+msgstr ""
+
+#: orders/views.py:196
+msgid "المعاملة غير موجودة."
+msgstr ""
+
+#: orders/views.py:201
+msgid "مش مصرح لك بحذف هذه المعاملة."
+msgstr ""
+
+#: orders/views.py:204
+msgid "تم حذف المعاملة بنجاح."
+msgstr ""
+
+#: products/models.py:55
+#, python-brace-format
+msgid ""
+"You have reached the monthly limit ({limit}) for {self.company."
+"subscription_plan} plan."
+msgstr ""
+
+#: products/views.py:24
+msgid "التصنيف غير موجود."
+msgstr ""
+
+#: products/views.py:30
+msgid "تم حذف التصنيف بنجاح."
+msgstr ""
+
+#: products/views.py:47
+msgid "هذا المستخدم ليس Vendor ولا يمكنه إضافة منتجات."
+msgstr ""
+
+#: products/views.py:55
+msgid "الـ Vendor لازم يكون مرتبط بشركة قبل إضافة منتجات."
+msgstr ""
+
+#: products/views.py:66
+msgid "المنتج غير موجود."
+msgstr ""
+
+#: products/views.py:72
+msgid "تم حذف المنتج بنجاح."
+msgstr ""
+
+#: products/views.py:99
+msgid "التقييم غير موجود."
+msgstr ""
+
+#: products/views.py:104
+msgid "مش مصرح لك تحذف التقييم ده."
+msgstr ""
+
+#: products/views.py:109
+msgid "تم حذف التقييم بنجاح."
+msgstr ""

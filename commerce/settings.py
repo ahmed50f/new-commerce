@@ -59,6 +59,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+     "django.middleware.locale.LocaleMiddleware", #  for i18n
 ]
 
 ROOT_URLCONF = "commerce.urls"
@@ -112,6 +113,22 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
+from django.utils.translation import gettext_lazy as _
+
+LANGUAGE_CODE = "en"   # اللغة الافتراضية
+
+
+USE_L10N = True
+
+
+LANGUAGES = [
+    ("en", _("English")),
+    ("ar", _("Arabic")),
+    ("fr", _("French")),
+    ("de", _("German")),
+    ("es", _("Spanish")),
+    ("it", _("Italian")),
+]
 
 # Static & Media
 STATIC_URL = "/static/"
@@ -130,7 +147,7 @@ OTP_TIMEOUT = 300  # 5 minutes
 WAIT_TIMES = [60, 600, 1800, 3600, 7200]  # (1m, 10m, 30m, 1h, 2h)
 
 # External services (from .env)
-CYPARTA_SERVICES_API_KEY = config("CYPARTA_SERVICES_API_KEY", default="")
+CYPARTA_SERVICEadminS_API_KEY = config("CYPARTA_SERVICES_API_KEY", default="")
 CYPARTA_SERVICES_BASE_URL = config(
     "CYPARTA_SERVICES_BASE_URL", default="https://services.cyparta.com")
 

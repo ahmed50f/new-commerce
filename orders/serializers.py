@@ -2,37 +2,59 @@ from rest_framework import serializers
 from .models import Order, OrderItem, Transaction
 from products.serializers import ProductSerializer
 from products.models import Product
+from django.utils.translation import gettext_lazy as _
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_detail = ProductSerializer(source='product', read_only=True)
+    product_detail = ProductSerializer(
+        source="product",
+        read_only=True,
+        label=_("Product Details")
+    )
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'product_detail', 'quantity']
-        read_only_fields = ['id', 'product_detail']
+        fields = ["id", "product", "product_detail", "quantity"]
+        read_only_fields = ["id", "product_detail"]
+        extra_kwargs = {
+            "product": {"label": _("Product")},
+            "quantity": {"label": _("Quantity")},
+        }
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, label=_("Order Items"))
 
-    items = OrderItemSerializer(many=True)
     class Meta:
         model = Order
         fields = [
             "id", "company", "governorate", "address",
             "shipping_cost", "items", "items_total",
-            "total_amount", 'total_price', 'total_discount', 'total_after_discount',"status", "created_at"]
-        
+            "total_amount", "discount_amount", "total_after_discount",
+            "status", "created_at",
+        ]
         read_only_fields = [
             "id", "created_at", "customer",
-            "items_total", "total_amount"
+            "items_total", "total_amount",
         ]
-
-
+        extra_kwargs = {
+            "company": {"label": _("Company")},
+            "governorate": {"label": _("Governorate")},
+            "address": {"label": _("Address")},
+            "shipping_cost": {"label": _("Shipping Cost")},
+            "items_total": {"label": _("Items Total")},
+            "total_amount": {"label": _("Total Amount")},
+            "discount_amount": {"label": _("Discount Amount")},
+            "total_after_discount": {"label": _("Total After Discount")},
+            "status": {"label": _("Status")},
+            "created_at": {"label": _("Created At")},
+        }
 
     def validate_items(self, value):
         if not value or len(value) == 0:
-            raise serializers.ValidationError("Order must contain at least one product.")
+            raise serializers.ValidationError(
+                _("Order must contain at least one product.")
+            )
         return value
 
     def validate(self, attrs):
@@ -45,7 +67,10 @@ class OrderSerializer(serializers.ModelSerializer):
                 product = Product.objects.get(pk=item["product"])
                 if product.company != company:
                     raise serializers.ValidationError(
-                        f"Product '{product.name}' does not belong to company '{company.name}'."
+                        _("Product '{product}' does not belong to company '{company}'.").format(
+                            product=product.name,
+                            company=company.name,
+                        )
                     )
         return attrs
 
@@ -58,21 +83,24 @@ class OrderSerializer(serializers.ModelSerializer):
             OrderItem.objects.create(order=order, **item_data)
         order.update_totals()  # تحديث التوتال مع حساب الشحن
         return order
+
     def update(self, instance, validated_data):
-        instance.governorate = validated_data.get('governorate', instance.governorate)
-        instance.status = validated_data.get('status', instance.status)
-        instance.address = validated_data.get('address', instance.address)
+        instance.governorate = validated_data.get("governorate", instance.governorate)
+        instance.status = validated_data.get("status", instance.status)
+        instance.address = validated_data.get("address", instance.address)
         # لا تحدث shipping_cost من هنا لأنه محسوب تلقائيًا
         instance.save()
         instance.update_totals()
         return instance
 
 
-
 class TransactionSerializer(serializers.ModelSerializer):
-    order = OrderSerializer(read_only=True)
+    order = OrderSerializer(read_only=True, label=_("Order"))
     order_id = serializers.PrimaryKeyRelatedField(
-        queryset=Order.objects.all(), source="order", write_only=True
+        queryset=Order.objects.all(),
+        source="order",
+        write_only=True,
+        label=_("Order ID"),
     )
 
     class Meta:
@@ -89,3 +117,11 @@ class TransactionSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "user", "reference_id", "created_at"]
+        extra_kwargs = {
+            "user": {"label": _("User")},
+            "amount": {"label": _("Amount")},
+            "method": {"label": _("Payment Method")},
+            "status": {"label": _("Status")},
+            "reference_id": {"label": _("Reference ID")},
+            "created_at": {"label": _("Created At")},
+        }

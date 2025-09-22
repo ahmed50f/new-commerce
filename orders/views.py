@@ -10,37 +10,36 @@ import uuid
 from .utils import calculate_shipping
 from django.core.exceptions import PermissionDenied
 from rest_framework.exceptions import NotFound
-from orders.models import Transaction
 
 # سعر الشحن لكل محافظة (تقريبًا حسب المسافة من القاهرة)
 GOVERNORATE_SHIPPING_COST = {
-    "Cairo": 20,
-    "Giza": 25,
-    "Alexandria": 35,
-    "Dakahlia": 30,
-    "Red_Sea": 50,
-    "Beheira": 30,
-    "Fayoum": 28,
-    "Gharbia": 30,
-    "Ismailia": 40,
-    "Menofia": 28,
-    "Minya": 32,
-    "Qalyubia": 25,
-    "New_Valley": 55,
-    "Suez": 45,
-    "Aswan": 60,
-    "Assiut": 50,
-    "Beni_Suef": 35,
-    "Port_Said": 40,
-    "Damietta": 40,
-    "Sharkia": 35,
-    "South_Sinai": 65,
-    "Kafr_El_Sheikh": 30,
-    "Matrouh": 70,
-    "Luxor": 55,
-    "Qena": 50,
-    "North_Sinai": 60,
-    "Sohag": 50,
+    _("Cairo"): 20,
+    _("Giza"): 25,
+    _("Alexandria"): 35,
+    _("Dakahlia"): 30,
+    _("Red Sea"): 50,
+    _("Beheira"): 30,
+    _("Fayoum"): 28,
+    _("Gharbia"): 30,
+    _("Ismailia"): 40,
+    _("Menofia"): 28,
+    _("Minya"): 32,
+    _("Qalyubia"): 25,
+    _("New Valley"): 55,
+    _("Suez"): 45,
+    _("Aswan"): 60,
+    _("Assiut"): 50,
+    _("Beni Suef"): 35,
+    _("Port Said"): 40,
+    _("Damietta"): 40,
+    _("Sharkia"): 35,
+    _("South Sinai"): 65,
+    _("Kafr El Sheikh"): 30,
+    _("Matrouh"): 70,
+    _("Luxor"): 55,
+    _("Qena"): 50,
+    _("North Sinai"): 60,
+    _("Sohag"): 50,
 }
 
 def calculate_shipping(order):
@@ -61,14 +60,12 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # لو Vendor يشوف بس أوردرات شركته
         if getattr(user, "role", None) == "vendor":
             company = getattr(user, "company", None)
             if company is None:
                 raise PermissionDenied(_("Vendors must be linked to a company."))
             return Order.objects.filter(company=company)
 
-        # لو Client يشوف أوردراته بس
         return Order.objects.filter(customer=user)
 
     def perform_create(self, serializer):
@@ -83,8 +80,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 product = Product.objects.get(id=item["product"])
                 quantity = int(item.get("quantity", 1))
                 OrderItem.objects.create(order=order, product=product, quantity=quantity)
-            order.update_totals()  # حساب التوتال والشحن والإحداثيات
-
+            order.update_totals()
 
 
     def destroy(self, request, *args, **kwargs):
@@ -92,29 +88,29 @@ class OrderViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
         except NotFound:
             return Response(
-                {"detail": _("الطلب غير موجود.")},
+                {"detail": _("Order not found.")},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # تحقق إن العميل أو الـ vendor يقدر يحذف الطلب
         user = request.user
         if getattr(user, "role", None) == "vendor":
             if instance.company != getattr(user, "company", None):
-                raise PermissionDenied(_("مش مصرح لك بحذف هذا الطلب."))
-        else:  # العميل
+                raise PermissionDenied(_("You are not authorized to delete this order."))
+        else:
             if instance.customer != user:
-                raise PermissionDenied(_("مش مصرح لك بحذف هذا الطلب."))
+                raise PermissionDenied(_("You are not authorized to delete this order."))
 
         self.perform_destroy(instance)
         return Response(
-            {"detail": _("تم حذف الطلب بنجاح.")},
+            {"detail": _("Order deleted successfully.")},
             status=status.HTTP_200_OK
         )
+
 
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
-    permission_classes = [permissions.IsAuthenticated]  # كل الناس لازم يكونوا مسجلين دخول
+    permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ["order", "product"]
     search_fields = ["order__id", "product__name"]
 
@@ -123,22 +119,20 @@ class OrderItemViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset().select_related("order", "product")
 
         if user.is_staff:
-            return qs  # admin/staff يشوف الكل
+            return qs
 
         if getattr(user, "role", None) == "vendor":
             company = getattr(user, "company", None)
             return qs.filter(order__company=company) if company else qs.none()
 
-        # client يشوف أوردراته بس
         return qs.filter(order__customer=user)
 
     def perform_create(self, serializer):
         order = serializer.validated_data.get("order")
         user = self.request.user
 
-        # تأكد إن العميل مش بيضيف في أوردر مش بتاعه
         if not user.is_staff and order.customer != user:
-            raise serializers.ValidationError("لا يمكنك إضافة منتجات لأوردر ليس ملكك.")
+            raise serializers.ValidationError(_("You cannot add items to an order that is not yours."))
 
         serializer.save()
         
@@ -149,7 +143,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # كل مستخدم يشوف المعاملات الخاصة بيه فقط
         return Transaction.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
@@ -158,21 +151,17 @@ class TransactionViewSet(viewsets.ModelViewSet):
         if not order:
             raise serializers.ValidationError({"order_id": _("Order not found or invalid.")})
 
-        # التحقق إن الـ order تابع للمستخدم الحالي
         if order.customer != self.request.user:
             raise serializers.ValidationError({"order_id": _("This order does not belong to you.")})
 
-        # توليد reference_id فريد
         reference_id = str(uuid.uuid4()).replace("-", "")[:12]
 
-        # إنشاء transaction
         transaction_obj = serializer.save(
             user=self.request.user,
             order=order,
             reference_id=reference_id
         )
 
-        # إنشاء إشعارات حسب حالة الدفع
         if transaction_obj.status == "success":
             Notification.objects.create(
                 user=self.request.user,
@@ -193,15 +182,14 @@ class TransactionViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
         except NotFound:
             return Response(
-                {"detail": _("المعاملة غير موجودة.")},
+                {"detail": _("Transaction not found.")},
                 status=status.HTTP_404_NOT_FOUND
             )
-        # تحقق إن المعاملة تخص المستخدم الحالي
         if instance.user != request.user:
-            raise PermissionDenied(_("مش مصرح لك بحذف هذه المعاملة."))
+            raise PermissionDenied(_("You are not authorized to delete this transaction."))
         self.perform_destroy(instance)
         return Response(
-            {"detail": _("تم حذف المعاملة بنجاح.")},
+            {"detail": _("Transaction deleted successfully.")},
             status=status.HTTP_200_OK
         )
     
@@ -210,7 +198,7 @@ def handle_payment_response(payment_gateway_response, transaction_id):
     try:
         transaction = Transaction.objects.get(id=transaction_id)
     except Transaction.DoesNotExist:
-        return {"error": "Transaction not found"}
+        return {"error": _("Transaction not found")}
 
     if payment_gateway_response['status'] == 'success':
         transaction.status = 'success'

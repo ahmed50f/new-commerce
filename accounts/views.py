@@ -2,12 +2,13 @@ from django.shortcuts import render
 from .models import CustomUser, Vendor, UserProfile, Company, Notification
 from .serializers import (
     CustomUserSerializer, VendorSerializer, RegisterSerializer,
-    UserProfileSerializer, LoginSerializer, ChangePasswordSerializer, CompanySerializer, NotificationSerializer, NotificationCreateSerializer
+    UserProfileSerializer, LoginSerializer, ChangePasswordSerializer,
+    CompanySerializer, NotificationSerializer, NotificationCreateSerializer
 )
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from django.utils.translation import gettext_lazy as _
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.views.decorators.csrf import csrf_exempt
@@ -17,8 +18,6 @@ from django.utils.crypto import get_random_string
 from django.db import transaction
 import time
 from rest_framework.exceptions import NotFound
-from .models import Vendor
-from rest_framework.decorators import action
 from django.utils import timezone
 from rest_framework import permissions
 
@@ -33,9 +32,7 @@ def register(request):
             with transaction.atomic():
                 user = serializer.save()
 
-                # ضبط الصلاحيات حسب الدور
                 if user.role == 'vendor':
-                    # إنشاء Vendor بدون أي حقول إضافية
                     Vendor.objects.create(user=user)
                     user.is_vendor = True
                     user.is_client = False
@@ -46,7 +43,7 @@ def register(request):
                     user.is_vendor = False
                     user.is_customer = False
                     user.save()
-                else:  # Staff أو أي دور آخر
+                else:
                     user.is_staff = True
                     user.is_active = True
                     user.save()
@@ -80,14 +77,14 @@ def login(request):
         if user.check_password(password):
             refresh = RefreshToken.for_user(user)
             return Response({
-                'message': _('Login Successfully'),
+                'message': _('Logged in successfully.'),
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'user_id': user.id,
                 'phone': user.phone,
             }, status=status.HTTP_200_OK)
         else:
-            return Response({"detail": _("Invalid credentials.")}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"detail": _("Invalid phone number or password.")}, status=status.HTTP_401_UNAUTHORIZED)
     except CustomUser.DoesNotExist:
         return Response({"detail": _("User not found.")}, status=status.HTTP_404_NOT_FOUND)
 
@@ -128,38 +125,40 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Company.objects.all()
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        instance = serializer.save()   # هنا بيتحفظ
-        data = self.get_serializer(instance).data   # هنا بيتعمل serialize للـ instance اللي اتحفظ
-        return Response(data, status=status.HTTP_201_CREATED)
-    
+        instance = serializer.save()
+        data = self.get_serializer(instance).data
+        return Response({
+            "company": data,
+            "message": _("Company created successfully.")
+        }, status=status.HTTP_201_CREATED)
     
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
         except NotFound:
             return Response(
-                {"detail": _("الشركة غير موجودة.")},
+                {"detail": _("Company not found.")},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # السماح بالمسح فقط للـ superuser أو staff (أو أي شرط تاني تحبه)
         if not request.user.is_staff:
             return Response(
-                {"detail": _("مش مصرح لك بحذف الشركة دي.")},
+                {"detail": _("You are not authorized to delete this company.")},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         self.perform_destroy(instance)
         return Response(
-            {"detail": _("تم حذف الشركة بنجاح.")},
+            {"detail": _("Company deleted successfully.")},
             status=status.HTTP_200_OK
         )
     
 
-# Vendor ViewSet
+# ✅ Vendor ViewSet
 class VendorViewSet(viewsets.ModelViewSet):
     queryset = Vendor.objects.all()
     serializer_class = VendorSerializer
@@ -167,75 +166,62 @@ class VendorViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # المستخدم العادي يشوف طلباته فقط
         if not user.is_staff:
             return Vendor.objects.filter(user=user)
-        # الـ staff أو owner يشوف كل الطلبات
         return Vendor.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(status="pending")
 
-    # الموافقة على الطلب
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def approve(self, request, pk=None):
         request_obj = self.get_object()
         user = request.user
 
         if not user.is_staff:
-            return Response({"detail": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
-
-        # إنشاء Vendor بعد الموافقة
-        Vendor.objects.create(
-            user=request_obj.user,
-            company=request_obj.company,
-            role="staff"  # أو owner حسب المنطق
-        )
+            return Response({"detail": _("You are not authorized to approve vendor requests.")}, status=status.HTTP_403_FORBIDDEN)
 
         request_obj.status = "approved"
         request_obj.processed_at = timezone.now()
         request_obj.save()
 
-        return Response({"detail": "Vendor request approved."})
+        return Response({"detail": _("The vendor request has been approved successfully.")})
 
-    # رفض الطلب
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def reject(self, request, pk=None):
         request_obj = self.get_object()
         user = request.user
 
         if not user.is_staff:
-            return Response({"detail": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": _("You are not authorized to reject vendor requests.")}, status=status.HTTP_403_FORBIDDEN)
 
         request_obj.status = "rejected"
         request_obj.processed_at = timezone.now()
         request_obj.save()
 
-        return Response({"detail": "Vendor request rejected."})
+        return Response({"detail": _("The vendor request has been rejected.")})
     
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
         except NotFound:
             return Response(
-                {"detail": _("طلب الـ Vendor غير موجود.")},
+                {"detail": _("Vendor request not found.")},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # السماح بالمسح فقط للـ superuser أو staff (أو أي شرط تاني تحبه)
         if not request.user.is_staff:
             return Response(
-                {"detail": _("مش مصرح لك بحذف طلب الـ Vendor ده.")},
+                {"detail": _("You are not authorized to delete this vendor request.")},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         self.perform_destroy(instance)
         return Response(
-            {"detail": _("تم حذف طلب الـ Vendor بنجاح.")},
+            {"detail": _("Vendor request deleted successfully.")},
             status=status.HTTP_200_OK
         )
     
-
 
 # ✅ Custom User ViewSet
 class CustomUserViewSet(viewsets.ModelViewSet):
@@ -277,7 +263,7 @@ def forgot_password(request):
     if last_sent_time and (current_time - last_sent_time) < wait_time:
         remaining_time = int(wait_time - (current_time - last_sent_time))
         return Response({
-            "detail": _(f"Please wait {remaining_time} seconds before requesting a new OTP."),
+            "detail": _("Please wait %(seconds)d seconds before requesting a new OTP.") % {"seconds": remaining_time},
             "wait_time": remaining_time
         }, status=429)
 
@@ -288,7 +274,6 @@ def forgot_password(request):
 
     return Response({
         "message": _("OTP generated for password reset."),
-        #"otp": new_otp,  # In production, send this via SMS instead of returning it
         "wait_time": wait_time
     }, status=status.HTTP_200_OK)
 
@@ -335,20 +320,17 @@ def change_password(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Notification View
+# ✅ Notification View
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all().order_by('-created_at')
     serializer_class = NotificationSerializer
 
     def get_permissions(self):
-        # كل المستخدمين مسموح لهم يشوفوا بس notifications الخاصة بيهم
         if self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
-        # ارسال Notification فقط للمسؤولين / admin
         return [permissions.IsAdminUser()]
 
     def get_queryset(self):
-        # لو user عادي، يشوف بس notifications الخاصة بيه
         user = self.request.user
         if user.is_staff:
             return Notification.objects.all().order_by('-created_at')
@@ -363,4 +345,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         notification = serializer.save()
-        return Response(NotificationSerializer(notification).data, status=status.HTTP_201_CREATED)
+        return Response({
+            "notification": NotificationSerializer(notification).data,
+            "message": _("Notification created successfully.")
+        }, status=status.HTTP_201_CREATED)
